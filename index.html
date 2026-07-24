@@ -126,6 +126,7 @@ body{font-family:'Inter',sans-serif;background:var(--fondo);color:var(--texto);f
     <button class="btn-p" onclick="guardarInforme()">&#128190; Guardar Informe Semanal</button>
     <button class="btn-s" onclick="exportarPDF()">&#11015; Descargar PDF</button>
     <button class="btn-s" onclick="cargarUltimo()">&#128260; Continuar desde ultimo</button>
+    <button class="btn-s" onclick="nuevoInforme()" style="border-color:#c0392b;color:#c0392b">&#128196; Nuevo informe desde cero</button>
   </div>
   <div class="stats-bar">
     <div class="stat-card"><div class="n n-t" id="s0">0</div><div class="l">Total obs.</div></div>
@@ -328,27 +329,170 @@ function ocultarBadgeSync(b, textoFinal) {
 }
 
 function cargarEjemplos() {
-  var h = '2026-04-29';
-  var ejs = [
-    ['Taller','Cilindros de gases nuevamente sueltos en zona de circulacion.','pendiente',h,[]],
-    ['Caldera','No cuentan con luz en el exterior. Necesario colocar al menos 2 focos para que los foguistas realicen tareas de forma segura.','pendiente',h,[]],
-    ['Elaboracion','Se observan tapas hundidas que generan que los carros o cajones se traben en transporte. Reparar/nivelar.','pendiente',h,[]],
-    ['Caldera','Perdida de vapor en acople de valvula. Se realizo el cambio, funcionando de forma adecuada.','corregido',h,[{f:'2026-06-11',n:'Cambio realizado. Funciona correctamente.'}]],
-    ['Lavadero','Concentracion de vapor por ventiladores que no funcionan. Las operarias terminan mojadas por condensacion. Realizar mantenimiento.','pendiente','2026-05-22',[]],
-    ['Azotea','Obligar uso de arnes de seguridad en escalera fija. Sin resguardo. Capacitar en trabajo en altura.','parcial',h,[{f:'2026-05-22',n:'Sin solucion.'},{f:'2026-06-11',n:'Se trabaja en colocacion de linea de vida.'}]],
-    ['Taller','Cable electrico sin doble aislamiento en banco de trabajo. Retirar o colocar bajo ducto.','pendiente',h,[{f:'2026-05-22',n:'Sin solucion.'}]],
-    ['Montacargas','Sin switch de seguridad para operar con puerta cerrada. Colocar indicacion de carga maxima.','parcial',h,[{f:'2026-04-29',n:'Se coloco switch en puertas.'},{f:'2026-06-11',n:'Se comprobo final de carrera inferior.'}]],
-    ['Taller','Falta de orden y limpieza. No cuenta con orden minimo para operacion segura.','parcial',h,[{f:'2026-05-22',n:'Mejoria observada.'},{f:'2026-06-11',n:'Hay que seguir mejorando.'}]],
-    ['Azotea','Personal accede a tanques sin proteccion anticaida. Necesario linea de vida y arnes.','parcial',h,[{f:'2026-06-11',n:'Se avanza en instalacion de linea de vida.'}]],
-    ['Emergencias','Personal debe contar con procedimiento ante fugas de amoniaco. Definir plan de emergencia.','parcial',h,[{f:'2026-06-11',n:'Se trabaja en implementacion del plan.'}]]
+  var obs = [
+    {
+      sector: 'PURGA DE NH3',
+      texto: 'Puerta abierta. Esta puerta deberia estar cerrada con restriccion de ingreso para evitar accidentes.',
+      estado: 'pendiente',
+      fecha: '2026-07-15',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'GENERAL',
+      texto: 'Extintor vence en el presente mes. Generar control periodico con lista actualizada y numeracion correspondiente segun plano de habilitacion. Ver con empresa Romagnilli.',
+      estado: 'pendiente',
+      fecha: '2026-07-15',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'FILTRO ELAB.',
+      texto: 'Operario se encontraba soldando utilizando extension electrica con grandes danos en aislacion y varios empalmes en zonas humedas. SITUACION DE EXTREMO RIESGO electrico, sumado a ayudante sin EPP.',
+      estado: 'pendiente',
+      fecha: '2026-07-14',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'JAMONERIA',
+      texto: 'No se utiliza guante anticorte en el recorte de cuero para jamon.',
+      estado: 'pendiente',
+      fecha: '2026-07-10',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'INSUMOS',
+      texto: 'Se observo a tres operarios circulando sobre unas de elevador. Se le llama la atencion al supervisor en el momento al respecto.',
+      estado: 'parcial',
+      fecha: '2026-07-03',
+      seg: [
+        {f: '2026-07-10', n: 'Se trabaja en la capacitacion al respecto.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'LAVADERO',
+      texto: 'Deposito de agua caliente roto, tapa con bisagra rota y chapas en mal estado, riesgo de golpe por caida de la tapa y corte con las chapas. Reparar o cambiar.',
+      estado: 'pendiente',
+      fecha: '2026-07-03',
+      seg: [
+        {f: '2026-07-10', n: 'Pendiente de correccion.'},
+        {f: '2026-07-15', n: 'Se evidencia mayor rotura, ver segunda foto.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'ELABORACION',
+      texto: 'Desniveles en zona de hornos por mal estado del piso. Es necesario readecuar para evitar sobreesfuerzos con los carros.',
+      estado: 'pendiente',
+      fecha: '2026-07-03',
+      seg: [
+        {f: '2026-07-10', n: 'Pendiente de correccion.'},
+        {f: '2026-07-15', n: 'Se sigue observando desniveles que dificulta el traslado de canastos y carros, se adjunta nueva foto.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'CAMARA HAM',
+      texto: 'Boton de panico o alarma interior no funciona. No se cuenta con apertura interna.',
+      estado: 'pendiente',
+      fecha: '2026-07-03',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'CALDERA',
+      texto: 'No cuentan con luz en el exterior. Necesario colocar al menos 2 focos para que los foguistas realicen tareas de forma segura.',
+      estado: 'corregido',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-07-03', n: 'Sigue igual.'},
+        {f: '2026-07-10', n: 'Se cuenta con un foco solo, falta instalar. Se habla con gerencia al respecto.'},
+        {f: '2026-07-15', n: 'Observacion corregida / levantada.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'ELABORACION',
+      texto: 'Se observan tapas hundidas que generan que los carros o cajones se traben en transporte. Reparar/nivelar.',
+      estado: 'pendiente',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-07-03', n: 'Sigue igual.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'LAVADERO',
+      texto: 'Concentracion de vapor por ventiladores que no funcionan. Las operarias terminan mojadas por condensacion. Realizar mantenimiento.',
+      estado: 'pendiente',
+      fecha: '2026-05-22',
+      seg: [],
+      fotos: []
+    },
+    {
+      sector: 'AZOTEA',
+      texto: 'Obligar uso de arnes de seguridad en escalera fija. Sin resguardo. Capacitar en trabajo en altura.',
+      estado: 'parcial',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-05-22', n: 'Sin solucion.'},
+        {f: '2026-06-11', n: 'Se trabaja en colocacion de linea de vida.'},
+        {f: '2026-07-03', n: 'Se realizo capacitacion mientras se termina instalacion.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'TALLER',
+      texto: 'Cable electrico sin doble aislamiento en banco de trabajo. Retirar o colocar bajo ducto.',
+      estado: 'pendiente',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-05-22', n: 'Sin solucion.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'TALLER',
+      texto: 'Falta de orden y limpieza. No cuenta con orden minimo para operacion segura.',
+      estado: 'parcial',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-05-22', n: 'Mejoria observada.'},
+        {f: '2026-06-11', n: 'Hay que seguir mejorando.'}
+      ],
+      fotos: []
+    },
+    {
+      sector: 'EMERGENCIAS',
+      texto: 'Personal debe contar con procedimiento ante fugas de amoniaco. Definir plan de emergencia.',
+      estado: 'pendiente',
+      fecha: '2026-04-29',
+      seg: [
+        {f: '2026-06-11', n: 'Se trabaja en implementacion del plan.'}
+      ],
+      fotos: []
+    }
   ];
-  OBS = ejs.map(function(e) {
-    return {id:CID++, sector:e[0], texto:e[1], estado:e[2], fecha:e[3], seg:e[4], fotos:[]};
+
+  OBS = obs.map(function(o) {
+    return {id: CID++, sector: o.sector, texto: o.texto, estado: o.estado, fecha: o.fecha, seg: o.seg, fotos: o.fotos};
   });
+
+  // Actualizar campos del encabezado
+  document.getElementById('f-emp').value   = 'CAMPOSUR, LA PAZ, CANELONES';
+  document.getElementById('emp-disp').textContent = 'CAMPOSUR, LA PAZ, CANELONES';
+  document.getElementById('f-dest').value  = 'Dra. Gabriela Rosa';
+  document.getElementById('f-num').value   = 'SST-7';
+  document.getElementById('f-fecha').value = hoy();
+
+  renderObs();
+  renderStats();
   salvarStorage();
 }
 
-/* ═══ RENDER ═══ */
 function renderObs() {
   var el = document.getElementById('obs-list');
   if (!OBS.length) { el.innerHTML = '<div class="empty">No hay observaciones.</div>'; return; }
@@ -608,20 +752,44 @@ function guardarInforme() {
   alert('Informe ' + n + ' del ' + ffecha(f) + ' guardado en historial.');
 }
 
-function cargarUltimo() {
-  if (!HIST.length) { alert('No hay informes guardados.'); return; }
-  restaurar(HIST.length - 1);
+function nuevoInforme() {
+  if (!confirm('Iniciar un informe nuevo desde cero? Se perderan las observaciones actuales no guardadas.')) return;
+  OBS = [];
+  CID = 1;
+  document.getElementById('f-fecha').value = hoy();
+  // Incrementar número de informe automáticamente
+  var numActual = document.getElementById('f-num').value || 'SST-1';
+  var m = numActual.match(/(\D*)(\d+)(.*)$/);
+  if (m) document.getElementById('f-num').value = m[1] + (parseInt(m[2]) + 1) + m[3];
+  renderObs();
+  renderStats();
+  salvarStorage();
+  // Scroll al tope
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function restaurar(idx) {
-  if (!confirm('Restaurar este informe como base del actual?')) return;
+function cargarUltimo() {
+  if (!HIST.length) { alert('No hay informes guardados.'); return; }
+  if (!confirm('Cargar el ultimo informe guardado como base? Se reemplazaran las observaciones actuales.')) return;
+  restaurar(HIST.length - 1, true);
+}
+
+function restaurar(idx, sinConfirm) {
+  if (!sinConfirm && !confirm('Restaurar este informe como base del actual?')) return;
   var inf = HIST[idx];
+  // Cargar solo observaciones NO corregidas (pendientes y en proceso)
+  // Las corregidas se incluyen igual para mantener el historial completo
   OBS = JSON.parse(JSON.stringify(inf.obs));
+  CID = OBS.reduce(function(max,o){ return Math.max(max, o.id+1); }, 1);
   var m = inf.num.match(/(\D*)(\d+)(.*)$/);
   if (m) document.getElementById('f-num').value = m[1] + (parseInt(m[2]) + 1) + m[3];
   document.getElementById('f-fecha').value = hoy();
+  // Restaurar también datos de cabecera
+  if (inf.emp)  { document.getElementById('f-emp').value  = inf.emp;  document.getElementById('emp-disp').textContent = inf.emp; }
+  if (inf.dest) document.getElementById('f-dest').value = inf.dest;
   renderObs(); renderStats(); salvarStorage();
   showTab('editor');
+  window.scrollTo({top:0, behavior:'smooth'});
 }
 
 function renderHistorial() {
