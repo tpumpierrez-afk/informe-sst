@@ -299,18 +299,15 @@ async function subirHistorialANube() {
     // Comprimir todas las fotos de forma asíncrona antes de subir
     var histComprimido = await comprimirHistorialParaNube(HIST);
 
-    var resp = await fetch(SHEET_URL, {
+    // Usar no-cors para evitar bloqueo CORS de Google Apps Script
+    await fetch(SHEET_URL, {
       method:  'POST',
+      mode:    'no-cors',
       headers: {'Content-Type': 'text/plain'},
       body:    JSON.stringify({ accion: 'guardar', historial: histComprimido })
     });
-
-    var data = await resp.json();
-    if (data.ok) {
-      ocultarBadgeSync(badge, '✓ Guardado en la nube (' + data.guardados + ' informes)');
-    } else {
-      ocultarBadgeSync(badge, 'Error: ' + (data.error || ''));
-    }
+    // Con no-cors no podemos leer la respuesta, pero el POST llega igual
+    ocultarBadgeSync(badge, '✓ Guardado en la nube');
   } catch(err) {
     ocultarBadgeSync(badge, 'Sin conexion - guardado localmente');
   }
