@@ -220,7 +220,7 @@ function selFirmante(quien) {
   document.getElementById('btn-f-manuel').classList.toggle('active', quien==='manuel');
   document.getElementById('btn-f-ale').classList.toggle('active', quien==='ale');
 }
-var SHEET_URL = 'https://script.google.com/macros/s/AKfycbzGLb419XnK19QCfSy4ogIOTF2t9hFvzHLWIzeaWKKjQ5eKY0l3voRBLd8-e_GRPV_GaA/exec';
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycby0wqUJDlFGz3ht2tgsLxG1vNjncFnaD6-QCCFjTEE2yi8eCfJrA4Z7FaNPnPAFa0Jabw/exec';
 
 window.onload = function() {
   document.getElementById('f-fecha').value = hoy();
@@ -291,24 +291,78 @@ function sincronizarDesdeNube() {
     });
 }
 
-function subirHistorialANube() {
+async function subirHistorialANube() {
   if (!SHEET_URL) return;
-  var badge = mostrarBadgeSync('Guardando en la nube...');
-  // Usar GET con datos en la URL para evitar CORS
-  var datos = encodeURIComponent(JSON.stringify(HIST));
-  var url = SHEET_URL + '?accion=guardar&data=' + datos;
-  fetch(url)
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      if (data.ok) {
-        ocultarBadgeSync(badge, '✓ Guardado en la nube (' + data.guardados + ' informes)');
-      } else {
-        ocultarBadgeSync(badge, 'Error: ' + (data.error || 'desconocido'));
-      }
-    })
-    .catch(function(err) {
-      ocultarBadgeSync(badge, 'Sin conexion - guardado localmente');
+  var badge = mostrarBadgeSync('Comprimiendo y guardando...');
+
+  try {
+    // Comprimir todas las fotos de forma asíncrona antes de subir
+    var histComprimido = await comprimirHistorialParaNube(HIST);
+
+    var resp = await fetch(SHEET_URL, {
+      method:  'POST',
+      headers: {'Content-Type': 'text/plain'},
+      body:    JSON.stringify({ accion: 'guardar', historial: histComprimido })
     });
+
+    var data = await resp.json();
+    if (data.ok) {
+      ocultarBadgeSync(badge, '✓ Guardado en la nube (' + data.guardados + ' informes)');
+    } else {
+      ocultarBadgeSync(badge, 'Error: ' + (data.error || ''));
+    }
+  } catch(err) {
+    ocultarBadgeSync(badge, 'Sin conexion - guardado localmente');
+  }
+}
+
+async function comprimirHistorialParaNube(hist) {
+  var resultado = [];
+  for (var i = 0; i < hist.length; i++) {
+    var inf  = hist[i];
+    var cInf = JSON.parse(JSON.stringify(inf));
+    if (cInf.obs) {
+      var obsComprimidas = [];
+      for (var j = 0; j < cInf.obs.length; j++) {
+        var o  = cInf.obs[j];
+        var co = JSON.parse(JSON.stringify(o));
+        if (co.fotos && co.fotos.length) {
+          var fotosComprimidas = [];
+          for (var k = 0; k < co.fotos.length; k++) {
+            var f = co.fotos[k];
+            if (f.data && f.data.length > 10000) {
+              // Comprimir a 800px ancho y calidad 0.4
+              var dataComp = await comprimirFotoAsync(f.data, 800, 0.4);
+              fotosComprimidas.push({ nombre: f.nombre, ancho: f.ancho, data: dataComp });
+            } else {
+              fotosComprimidas.push(f);
+            }
+          }
+          co.fotos = fotosComprimidas;
+        }
+        obsComprimidas.push(co);
+      }
+      cInf.obs = obsComprimidas;
+    }
+    resultado.push(cInf);
+  }
+  return resultado;
+}
+
+function comprimirFotoAsync(dataURL, maxAncho, calidad) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxAncho) { h = Math.round(h * maxAncho / w); w = maxAncho; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = function() { resolve(dataURL); };
+    img.src = dataURL;
+  });
 }
 
 function mostrarBadgeSync(texto) {
@@ -720,17 +774,41 @@ function addFotos(o, input) {
   files.forEach(function(file) {
     var reader = new FileReader();
     reader.onload = function(e) {
-      o.fotos.push({nombre: file.name, data: e.target.result, ancho: 100});
-      pending--;
-      if (!pending) {
-        var fd = document.getElementById('fotos-' + o.id);
-        if (fd) renderFotosDiv(fd, o);
-        salvarStorage();
-      }
+      // Comprimir la foto antes de guardarla
+      comprimirFoto(e.target.result, 1200, 0.65, function(dataComprimida) {
+        o.fotos.push({nombre: file.name, data: dataComprimida, ancho: 100});
+        pending--;
+        if (!pending) {
+          var fd = document.getElementById('fotos-' + o.id);
+          if (fd) renderFotosDiv(fd, o);
+          salvarStorage();
+        }
+      });
     };
     reader.readAsDataURL(file);
   });
   input.value = '';
+}
+
+function comprimirFoto(dataURL, maxAncho, calidad, callback) {
+  var img = new Image();
+  img.onload = function() {
+    var canvas = document.createElement('canvas');
+    var w = img.width;
+    var h = img.height;
+    // Reducir si es más ancha que maxAncho
+    if (w > maxAncho) {
+      h = Math.round(h * maxAncho / w);
+      w = maxAncho;
+    }
+    canvas.width  = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+    var resultado = canvas.toDataURL('image/jpeg', calidad);
+    callback(resultado);
+  };
+  img.src = dataURL;
 }
 
 function eliminarFoto(o, idx) {
