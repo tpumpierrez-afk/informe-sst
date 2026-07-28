@@ -220,7 +220,7 @@ function selFirmante(quien) {
   document.getElementById('btn-f-manuel').classList.toggle('active', quien==='manuel');
   document.getElementById('btn-f-ale').classList.toggle('active', quien==='ale');
 }
-var SHEET_URL = 'https://script.google.com/macros/s/AKfycbwGaXiNkClPuRD2hEnQK-1O9q25T9BHRR5yyFyOAK1vImk1xIDqeJCcMAw9xgxoboGZVw/exec';
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbzGLb419XnK19QCfSy4ogIOTF2t9hFvzHLWIzeaWKKjQ5eKY0l3voRBLd8-e_GRPV_GaA/exec';
 
 window.onload = function() {
   document.getElementById('f-fecha').value = hoy();
@@ -272,36 +272,42 @@ function salvarStorage() {
 /* ═══ SINCRONIZACION CON GOOGLE SHEETS ═══ */
 function sincronizarDesdeNube() {
   if (!SHEET_URL) return;
-  var badge = mostrarBadgeSync('Sincronizando...');
-  fetch(SHEET_URL)
+  var badge = mostrarBadgeSync('Sincronizando con la nube...');
+  var url = SHEET_URL + '?accion=leer';
+  fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(data) {
       if (data && data.historial && data.historial.length) {
-        // Combina: usa el historial de la nube como fuente de verdad
         HIST = data.historial;
         salvarStorage();
         renderHistorial();
+        ocultarBadgeSync(badge, '✓ ' + data.historial.length + ' informes sincronizados');
+      } else {
+        ocultarBadgeSync(badge, 'Nube vacia - usando datos locales');
       }
-      ocultarBadgeSync(badge, 'Sincronizado');
     })
     .catch(function(err) {
-      ocultarBadgeSync(badge, 'Sin conexion (modo local)');
+      ocultarBadgeSync(badge, 'Sin conexion - modo local');
     });
 }
 
 function subirHistorialANube() {
   if (!SHEET_URL) return;
   var badge = mostrarBadgeSync('Guardando en la nube...');
-  fetch(SHEET_URL, {
-    method: 'POST',
-    body: JSON.stringify({ accion: 'guardar_historial', historial: HIST })
-  })
+  // Usar GET con datos en la URL para evitar CORS
+  var datos = encodeURIComponent(JSON.stringify(HIST));
+  var url = SHEET_URL + '?accion=guardar&data=' + datos;
+  fetch(url)
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      ocultarBadgeSync(badge, 'Guardado en la nube');
+      if (data.ok) {
+        ocultarBadgeSync(badge, '✓ Guardado en la nube (' + data.guardados + ' informes)');
+      } else {
+        ocultarBadgeSync(badge, 'Error: ' + (data.error || 'desconocido'));
+      }
     })
     .catch(function(err) {
-      ocultarBadgeSync(badge, 'No se pudo subir (se guardo localmente)');
+      ocultarBadgeSync(badge, 'Sin conexion - guardado localmente');
     });
 }
 
